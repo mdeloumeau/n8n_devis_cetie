@@ -48,8 +48,6 @@ How to Use
 
 Notes
 
-Only extracts data explicitly present in the email or attachments — no assumptions are made.
-
-Supports both PDF and Excel attachments.
-
-Designed for electrical cabinet (armoire) quote requests.
+ - Only extracts data explicitly present in the email or attachments — no assumptions are made.
+ - Supports both PDF and Excel attachments.
+ - Designed for electrical cabinet (armoire) quote requests.
