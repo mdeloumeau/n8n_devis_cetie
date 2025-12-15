@@ -1,0 +1,896 @@
+{
+  "name": "IA devis cetie",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "output": "fields",
+        "fields": [
+          "body"
+        ],
+        "filters": {},
+        "options": {
+          "downloadAttachments": true
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlookTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1792,
+        336
+      ],
+      "id": "55088b93-ad94-4448-ac81-2b3901bc783b",
+      "name": "Microsoft Outlook Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "dataPDF",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -368,
+        480
+      ],
+      "id": "f3e9f1cd-65bd-4e61-965b-c4404a06193c",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "\"mail_agent\""
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        784,
+        496
+      ],
+      "id": "f5b6acc1-7564-44ca-83b1-3196b189a0e3",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "model": "codestral-latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        640,
+        496
+      ],
+      "id": "1787c3d0-1d45-4d22-957f-9b96ac613a0a",
+      "name": "Mistral Cloud Chat Model"
+    },
+    {
+      "parameters": {
+        "model": "codestral-latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        -1376,
+        192
+      ],
+      "id": "2adb6df0-5597-42cf-b927-7ee3de0c956d",
+      "name": "Mistral Cloud Chat Model1"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "\"mail_agent\""
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -1232,
+        192
+      ],
+      "id": "4fc824e5-b9ab-417a-88bc-b4f3b51ff5db",
+      "name": "Simple Memory1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=renvoie seulement True si ce mail concerne une demande de devis pour une armoire éléctrique (ou un coffret) sinon tu renvoie seulement False\nvoici le mail : \n{{ $json.body }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -1376,
+        336
+      ],
+      "id": "64013083-e18f-41e8-90ba-d7ab8cc685e0",
+      "name": "AI Détéction demande"
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "useDataOfInput": 2
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -816,
+        336
+      ],
+      "id": "f750499a-e01c-4079-a555-cb966bea36a3",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Supprime les binaires et ne garde que le texte utile\nreturn items.map(item => ({\n  json: {\n    body: item.json.body?.content || \"\",\n  },\n}));\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1536,
+        336
+      ],
+      "id": "3840bc38-a0de-4900-8e4b-7fd5d86cad9a",
+      "name": "Code enlever PJ"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "519b7ba7-ed18-4611-a8da-4acd7c09cbb9",
+              "leftValue": "={{ $json.output }}",
+              "rightValue": "True",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1088,
+        336
+      ],
+      "id": "16dac0fe-83a5-490f-9882-f0b6fe670763",
+      "name": "demande de devis ?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const itemsOut = [];\n\nfor (const item of items) {\n  // Boucle sur toutes les propriétés binaires\n  for (const key of Object.keys(item.binary || {})) {\n    const file = item.binary[key];\n    if (file.mimeType === 'application/pdf') {\n      itemsOut.push({\n        json: {\n          originalMailId: item.json.id,\n          fileName: file.fileName,\n        },\n        binary: {\n          dataPDF: file, // renommer pour Extract from PDF\n        },\n      });\n    }\n  }\n}\n\nreturn itemsOut;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -528,
+        480
+      ],
+      "id": "67e6ea57-b890-45c3-944d-101d505d1142",
+      "name": "Code avoir PDF"
+    },
+    {
+      "parameters": {
+        "jsCode": "const email = $input.all()[0].json.from;\nconst subject = $input.all()[0].json.subject || \"\";\nconst body = $('Nettoyage texte mail').first().json.text;\n\nconst attachments =\n  \"\\nRésumé des pdfs :\" +\n  $('AI résume texte').first().json.output +\n  \"\\nRésumé du Excel :\" +\n  $('AI résume Excel').first().json.output;\n\nconst fullText = `\nCorps du mail : ${body}\n\nPièces jointes : ${attachments}\n`;\n\nreturn [\n  {\n    json: {\n      model: \"mistral-tiny\",\n      messages: [\n        {\n          role: \"user\",\n          content: `\nTu es un assistant expert en analyse de mails techniques pour des demandes de devis d’armoires électriques.  \nLis attentivement le mail et les pièces jointes.  \nRenvoie **UNIQUEMENT un JSON valide**, sans texte ni explication.\n\n🎯 **Objectif :**\nExtraire les informations réellement présentes et utiles au chiffrage, sans inventer ni supposer.\n\n---\n\n## 🚫 Règles fondamentales\n\n1. ❌ **Ne jamais inventer d’informations.**  \n   Si une donnée n’est pas clairement mentionnée, laisse le champ vide ou indique “Non précisé”.\n\n2. ⚠️ **Ne pas dupliquer ou reformuler inutilement.**  \n   Utilise les termes exacts du texte lorsque possible.\n\n3. 📆 **Ne jamais générer de date implicite.**  \n   Si aucune date n’apparaît dans le mail ou les pièces jointes, “Délai demandé” = “Non précisé”.\n\n---\n\n## 🧱 Structure JSON attendue\n\n{\n  \"Client\": \"Nom de l’entreprise (en majuscules, d’après le domaine email ou signature)\",\n  \"Interlocuteur\": \"Nom complet de l’expéditeur (Prénom Nom)\",\n  \"Armoires\": [\n    {\n      \"Titre\": \"Armoire [nombre de pompes] [Mono/Tri] [puissance kW] [intensité A] [portes] [socle si présent]\",\n      \"Options\": [\"Éléments techniques significatifs uniquement\"],\n      \"Régulation\": [\"Éléments liés à la régulation (piezzo, poires, pressostat, etc.)\"]\n    }\n  ],\n  \"Délai demandé\": \"Date ou période clairement mentionnée (sinon 'Non précisé')\",\n  \"Pièces jointes\": [\"Noms des fichiers pertinents\"],\n  \"Notes\": [\"Contexte, contraintes ou informations complémentaires utiles au devis\"]\n}\n\n---\n\n## ⚙️ Détails d’extraction\n\n### 🏢 Client\n- Basé sur le domaine de l’expéditeur (ex: *@calpeda.fr → CALPEDA*).\n- Sinon, utiliser le nom trouvé dans la signature.\n\n### 👤 Interlocuteur\n- Toujours l’expéditeur du mail principal.  \n- Format : “Prénom Nom”.\n\n### ⚡ Titre de l’armoire\n- Regroupe uniquement les **caractéristiques physiques** :\n  - Nombre de pompes  \n  - Type (Mono/Tri)  \n  - Puissance (kW)  \n  - Intensité (A)  \n  - Nombre de portes  \n  - Socle présent ou non  \n- Ces informations sont très importantes, si elles sont dans le mail elles doivent obligatoirement apparaitre dans le titre\n- Si “coffret” est mentionné, considérer comme petite armoire.  \n- Ne pas ajouter d’options ou de régulation dans ce champ.\n\n### 🔌 Options\nInclure **tous les équipements, dispositifs et fonctionnalités mentionnés ou suggérés** dans le mail ou les pièces jointes.  \n- Ne rien omettre si le texte indique un élément, même secondaire.  \n- Tu peux **regrouper ou reformuler légèrement** pour plus de clarté.  \n- Inclure tout ce qui peut influencer le chiffrage ou la configuration : Sofrel, Magelis, Parafoudre, variateur de fréquence, relais, automates, transformateurs, résistances, disjoncteurs spéciaux, télésurveillance, débitmètres, batteries, protections spécifiques, alarmes, etc.  \n- Inclure également tout ce qui apporte confort, sécurité, surveillance ou suivi opérationnel.  \n\n🔴 **À exclure uniquement** :  \n- Voyants standards (sous tension, marche, défaut)  \n- Commutateurs Auto/Arrêt/Manuel  \n- Compteurs horaires  \n- Voltmètres / ampèremètres \n- le nombre de pompes et la puissance (à intégrer dans le titre donc pas dans les options)\n\n### 🔄 Régulation\nInclure **tous les éléments de mesure, contrôle ou commande mentionnés**, même s’ils semblent secondaires :  \n- Sonde piézo, pressostat, flotteurs, poires, détecteurs de surverse, détecteurs de fuite, sondes de niveau, relais de contrôle, automates de régulation, etc.  \n- Tu peux **regrouper les éléments apparentés** pour plus de lisibilité, mais ne jamais inventer.  \n- Tout ce qui participe à la sécurité, à la régulation précise ou au fonctionnement automatisé doit être listé.\n### ⏱️ Délai demandé\n- Utiliser la **date exacte mentionnée** (ex: “mercredi 19/02/2025”).  \n- Si aucune date ou période : \"Non précisé\".\n\n### 🧾 Notes\nAjouter toute information utile au chiffrage :\n- Zone ATEX, local exigu, remplacement existant, télésurveillance, câblage, contraintes électriques, urgence, etc.\n\n---\n\n## 🧠 Exemple clair\n\n**Entrée :**  \n> Armoire 2 pompes Tri 4.8kW 10.1A double portes sur socle, Sofrel S4W, Magelis, sonde piézo + poires en secours, variateur de fréquence.  \n> Livraison souhaitée le 19/02/2025.\n\n**Sortie attendue :**\n{\n  \"Client\": \"HYDRA\",\n  \"Interlocuteur\": \"Olivier Dussart\",\n  \"Armoires\": [\n    {\n      \"Titre\": \"Armoire 2 pompes Tri 4.8kW 10.1A Double portes sur socle\",\n      \"Options\": [\"Sofrel S4W\", \"Écran Magelis\", \"Variateur de fréquence\"],\n      \"Régulation\": [\"Sonde piézo\", \"Poires de niveau\"]\n    }\n  ],\n  \"Délai demandé\": \"19/02/2025\",\n  \"Pièces jointes\": [\"CCTP\", \"DQE\"],\n  \"Notes\": [\n    \"Le coffret doit être installé sur un socle béton existant\",\n    \"Zone ATEX – composants à adapter\",\n    \"Demande de devis urgente\"\n  ]\n}\n\n---\n\nVoici le mail et ses pièces jointes à analyser :\n${fullText}\n`\n        }\n      ],\n      temperature: 0.1 // plus rigoureux, moins inventif\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        336
+      ],
+      "id": "d396020a-235a-4d19-88b6-ddfd2c615d46",
+      "name": "Création du prompt"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        304,
+        320
+      ],
+      "id": "d3a8846c-b5c2-42df-b964-1595cca852c6",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "36015dba-dd76-4e2d-9b37-eb05cc7845ac",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "valide",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1120,
+        336
+      ],
+      "id": "cf92a61d-9891-4cb1-9d01-b865e38d4eb2",
+      "name": "résumé valide ?"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Récupère la chaîne JSON\nlet jsonStr = $input.first().json.data;\n\n// Retire les backticks et le marqueur ```json\njsonStr = jsonStr.replace(/```json\\s*|```/g, '').trim();\n\n// Parse le JSON\nlet data;\ntry {\n  data = JSON.parse(jsonStr);\n} catch (e) {\n  return [{ json: { html: `<p>Erreur parsing JSON : ${e.message}</p>` } }];\n}\n\n// Génération HTML\nlet html = `\n<html>\n  <head>\n    <meta charset=\"utf-8\">\n    <style>\n      body { font-family: Arial, sans-serif; margin: 40px; color: #222; background-color: white; }\n      h1 { color: #004080; }\n      .bloc { margin-bottom: 20px; }\n      .label { font-weight: bold; }\n      .armoire { margin-left: 20px; }\n      ul { margin-top: 5px; margin-bottom: 5px; }\n    </style>\n  </head>\n  <body>\n    <h1>Demande de devis</h1>\n`;\n\n// Client\nhtml += `<div class=\"bloc\"><span class=\"label\">Client :</span> ${data.Client || ''}</div>`;\n\n// Interlocuteur\nhtml += `<div class=\"bloc\"><span class=\"label\">Interlocuteur :</span> ${data.Interlocuteur || ''}</div>`;\n\n// Armoires\nif (data.Armoires && data.Armoires.length) {\n  html += `<div class=\"bloc\"><span class=\"label\">Armoires :</span>`;\n  data.Armoires.forEach((armoire, idx) => {\n    html += `<div class=\"armoire\"><strong>Armoire ${idx + 1} :</strong> ${armoire.Titre || ''}`;\n    \n    if (armoire.Options && armoire.Options.length) {\n      html += `<div class=\"armoire\"><span class=\"label\">Options :</span><ul>`;\n      armoire.Options.forEach(opt => html += `<li>${opt}</li>`);\n      html += `</ul></div>`;\n    }\n    \n    if (armoire.Régulation && armoire.Régulation.length) {\n      html += `<div class=\"armoire\"><span class=\"label\">Régulation :</span><ul>`;\n      armoire.Régulation.forEach(reg => html += `<li>${reg}</li>`);\n      html += `</ul></div>`;\n    }\n\n    html += `</div>`; // fin armoire\n  });\n  html += `</div>`; // fin bloc armoires\n}\n\n// Délai demandé\nhtml += `<div class=\"bloc\"><span class=\"label\">Délai demandé :</span> ${data[\"Délai demandé\"] || ''}</div>`;\n\n// Notes\nif (data[\"Notes\"] && data[\"Notes\"].length) {\n  html += `<div class=\"bloc\"><span class=\"label\">Notes :</span><ul>`;\n  data[\"Notes\"].forEach(note => html += `<li>${note}</li>`);\n  html += `</ul></div>`;\n}\n\n// Pièces jointes\nif (data[\"Pièces jointes\"] && data[\"Pièces jointes\"].length) {\n  html += `<div class=\"bloc\"><span class=\"label\">Pièces jointes :</span><ul>`;\n  data[\"Pièces jointes\"].forEach(pj => html += `<li>${pj}</li>`);\n  html += `</ul></div>`;\n}\n\nhtml += `\n  </body>\n</html>\n`;\n\nreturn [{ json: { html }}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1296,
+        272
+      ],
+      "id": "1bb12c8d-a512-4f15-b852-ea4a57f4c040",
+      "name": "conversion en html"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json.output;\n\n// Fonction utilitaire pour vérifier si tout est \"Non précisé\"\nfunction isEmptyValue(val) {\n  if (typeof val === 'string') {\n    return val.trim().toLowerCase().includes('non précisé') || val.trim() === '';\n  }\n  if (Array.isArray(val)) {\n    return val.length === 0 || val.every(isEmptyValue);\n  }\n  if (typeof val === 'object' && val !== null) {\n    return Object.values(val).every(isEmptyValue);\n  }\n  return false;\n}\n\n// Vérifie les champs importants\nconst emptyClient = isEmptyValue(data.Client);\nconst emptyInterlocuteur = isEmptyValue(data.Interlocuteur);\nconst emptyArmoires = !data.Armoires || data.Armoires.length === 0 || data.Armoires.every(isEmptyValue);\nconst emptyDelai = isEmptyValue(data[\"Délai demandé\"]);\n\nconst isMostlyEmpty = emptyClient && emptyInterlocuteur && emptyArmoires && emptyDelai;\n\nif (isMostlyEmpty) {\n  return [{ json: { status: \"invalide\", reason: \"Toutes les données sont non précisées\", data } }];\n}\n\nreturn [{ json: { status: \"valide\", data } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        336
+      ],
+      "id": "44394639-fef1-40c5-b568-ac9e7569ff89",
+      "name": "création statut"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1296,
+        400
+      ],
+      "id": "17f11f40-fd63-441c-9a43-9b0a02ea9551",
+      "name": "Mail autre 2"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "\"mail_agent\""
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        32,
+        640
+      ],
+      "id": "433644af-986b-4bb9-90f5-6079dfc7a6ce",
+      "name": "Simple Memory2"
+    },
+    {
+      "parameters": {
+        "model": "codestral-latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        -112,
+        640
+      ],
+      "id": "00026e80-99c9-4a11-9147-57a72a767fc7",
+      "name": "Mistral Cloud Chat Model2"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "\"mail_agent\""
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        160,
+        0
+      ],
+      "id": "87b292ab-155b-4761-9590-93b717166741",
+      "name": "Simple Memory3"
+    },
+    {
+      "parameters": {
+        "model": "codestral-latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "90dc4e94-f440-437a-8f69-17cf139ca258",
+      "name": "Mistral Cloud Chat Model3"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Voici un texte qui provient d'un fichier excel, j'aimerais que tu me renvoie un extrait ou résumé de la partie qui porte sur l'armoire éléctrique (ou coffret), si le document ne porte pas sur une armoire éléctrique alors tu peux dire que le document ne porte pas sur l'armoire\nVoici le document :\n{{ $json.mergedText }}\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        144
+      ],
+      "id": "25290a51-a2e4-4329-acfb-70ddb71b92ea",
+      "name": "AI résume Excel"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.messages[0].content }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        640,
+        336
+      ],
+      "id": "6cfbc539-42ab-48b9-81b1-b08668a42ec4",
+      "name": "AI résumé final"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -288,
+        144
+      ],
+      "id": "82d6ff3e-470d-400b-8476-3b990049cdd5",
+      "name": "Merge2"
+    },
+    {
+      "parameters": {
+        "operation": "xls",
+        "binaryPropertyName": "dataExcel",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -448,
+        64
+      ],
+      "id": "74ea1d4d-2816-46ac-a9dd-9f595d3ea7b9",
+      "name": "Extract from XLS"
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "binaryPropertyName": "dataExcel",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -448,
+        224
+      ],
+      "id": "cefd7811-deca-49d3-b93a-2cff3b0e6421",
+      "name": "Extract from XLSX"
+    },
+    {
+      "parameters": {
+        "jsCode": "const itemsOut = [];\n\nfor (const item of items) {\n  // Parcours toutes les pièces jointes binaires\n  for (const key of Object.keys(item.binary || {})) {\n    const file = item.binary[key];\n\n    if (\n      file.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' // .xlsx\n    ) {\n      itemsOut.push({\n        json: {\n          originalMailId: item.json.id,\n          fileName: file.fileName,\n        },\n        binary: {\n          dataExcel: file, // le nom \"dataExcel\" sera utilisé dans Read from Spreadsheet\n        },\n      });\n    }\n  }\n}\n\nreturn itemsOut;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -608,
+        224
+      ],
+      "id": "0df81f0a-14d0-4069-93b8-19b777223023",
+      "name": "Code avoir XLSX"
+    },
+    {
+      "parameters": {
+        "jsCode": "const itemsOut = [];\n\nfor (const item of items) {\n  // Parcours toutes les pièces jointes binaires\n  for (const key of Object.keys(item.binary || {})) {\n    const file = item.binary[key];\n\n    if (\n      file.mimeType === 'application/vnd.ms-excel' // .xls\n    ) {\n      itemsOut.push({\n        json: {\n          originalMailId: item.json.id,\n          fileName: file.fileName,\n        },\n        binary: {\n          dataExcel: file, // le nom \"dataExcel\" sera utilisé dans Read from Spreadsheet\n        },\n      });\n    }\n  }\n}\n\nreturn itemsOut;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -608,
+        64
+      ],
+      "id": "131caa61-1243-4351-b99d-d1e66e3046d4",
+      "name": "Code avoir XLS"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Voici un pdf, j'aimerais que tu me renvoie :\n- Titre\n- Extrait de la partie qui porte sur l'armoire éléctrique (ou coffret)\nSi le document ne porte pas sur une armoire éléctrique alors ne me renvoie absolument rien.\nvoici le document :\n{{ $('Code avoir PDF').item.json.fileName }}\n{{ $json.text }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -112,
+        480
+      ],
+      "id": "da10e425-78b4-407c-a18f-b87c3e51b0a6",
+      "name": "AI résume texte"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -1248,
+        496
+      ],
+      "id": "3b706779-d8bf-4233-bf80-a38055a1c84b",
+      "name": "Reprise des PJ du mail d'entrée"
+    },
+    {
+      "parameters": {
+        "jsCode": "let text = \"\";\n\nfor (const item of items) {\n  for (const [key, value] of Object.entries(item.json)) {\n    // Exclut les colonnes inutiles comme \"poids\" si tu veux\n    if (key !== \"poids (/5)\") {\n      text += `${key} : ${value}\\n`;\n    }\n  }\n  text += \"\\n\"; // séparateur entre les lignes\n}\n\nreturn [\n  {\n    json: {\n      mergedText: text\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -144,
+        144
+      ],
+      "id": "2f9b5c3c-4957-4224-8a13-7baa7a601b79",
+      "name": "Regroupement items"
+    },
+    {
+      "parameters": {
+        "jsCode": "const htmlContent = $('Microsoft Outlook Trigger').first().json.body.content;\n\n// Retire toutes les balises HTML\nlet text = htmlContent.replace(/<[^>]*>/g, ' ');\n\n// Remplace les entités HTML courantes (&nbsp;, &amp;, etc.)\ntext = text.replace(/&nbsp;/g, ' ')\n           .replace(/&amp;/g, '&')\n           .replace(/&lt;/g, '<')\n           .replace(/&gt;/g, '>')\n           .replace(/&quot;/g, '\"')\n           .replace(/&#39;/g, \"'\");\n\n// Nettoie les espaces multiples et retours à la ligne\ntext = text.replace(/\\s+/g, ' ').trim();\n\nreturn [{ json: { text } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        336
+      ],
+      "id": "143a4ec8-6885-4e3e-b77f-7f6fad756102",
+      "name": "Nettoyage texte mail"
+    },
+    {
+      "parameters": {
+        "html": "{{ $json.html }}"
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        1472,
+        272
+      ],
+      "id": "55f6ea07-bdbd-4665-a0e1-b234041cb704",
+      "name": "HTML"
+    }
+  ],
+  "pinData": {
+    "HTML": [
+      {
+        "json": {
+          "html": "\n<html>\n  <head>\n    <meta charset=\"utf-8\">\n    <style>\n      body { font-family: Arial, sans-serif; margin: 40px; color: #222; background-color: white; }\n      h1 { color: #004080; }\n      .bloc { margin-bottom: 20px; }\n      .label { font-weight: bold; }\n      .armoire { margin-left: 20px; }\n      ul { margin-top: 5px; margin-bottom: 5px; }\n    </style>\n  </head>\n  <body>\n    <h1>Demande de devis</h1>\n<div class=\"bloc\"><span class=\"label\">Client :</span> HYDRA</div><div class=\"bloc\"><span class=\"label\">Interlocuteur :</span> Olivier Dussart</div><div class=\"bloc\"><span class=\"label\">Armoires :</span><div class=\"armoire\"><strong>Armoire 1 :</strong> Armoire 2 pompes Tri 4.8kW 10.1A Double portes sur socle<div class=\"armoire\"><span class=\"label\">Options :</span><ul><li>Sofrel S4W</li><li>Écran Magelis 7 pouces</li><li>Variateurs de fréquence</li><li>Débitmètre Promag W400</li><li>Pompe vide cave</li><li>Pompe eaux industrielles</li><li>Sonde piézo suivi nappe</li><li>Détecteur de surverse</li><li>Télégestion GSM</li><li>Potence intégrée avec palan</li><li>Automate écran 5,7 pouces</li><li>Transformateur 400VAC/24VAC</li><li>Alimentation 230VAC/24VDC</li><li>Résistance chauffante avec thermostat</li><li>Interrupteur général différentiel 300mA</li><li>Relais de contrôle de phase</li><li>Protection des appareils par disjoncteur</li><li>Batterie 12VDC / 12AH</li><li>Disjoncteurs et Parafoudres</li></ul></div><div class=\"armoire\"><span class=\"label\">Régulation :</span><ul><li>Sonde piézo</li><li>Poires de niveau</li><li>Variateur de fréquence</li><li>Débitmètre Promag W400</li></ul></div></div></div><div class=\"bloc\"><span class=\"label\">Délai demandé :</span> 19/02/2025</div><div class=\"bloc\"><span class=\"label\">Notes :</span><ul><li>Le coffret doit être installé sur un socle béton existant</li><li>Demande de devis urgente</li><li>Zone ATEX – composants à adapter</li></ul></div><div class=\"bloc\"><span class=\"label\">Pièces jointes :</span><ul><li>MP_2023-14_24_Programme_de_travaux-PRO_R3-SR2.pdf</li><li>Communauté d'Agglomération Epernay Coteaux et Plaine de Champagne : Bassin de rétention de 520 m3 et reprise du transfert des eaux usées de Oiry-Plivot vers SR2.xlsx</li></ul></div>\n  </body>\n</html>\n"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Microsoft Outlook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code enlever PJ",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Reprise des PJ du mail d'entrée",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "AI résume texte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI résumé final",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral Cloud Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI résumé final",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral Cloud Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Détéction demande",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory1": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Détéction demande",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Détéction demande": {
+      "main": [
+        [
+          {
+            "node": "demande de devis ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code avoir PDF",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code avoir XLSX",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code avoir XLS",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Nettoyage texte mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code enlever PJ": {
+      "main": [
+        [
+          {
+            "node": "AI Détéction demande",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "demande de devis ?": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code avoir PDF": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Création du prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Création du prompt": {
+      "main": [
+        [
+          {
+            "node": "AI résumé final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "résumé valide ?": {
+      "main": [
+        [
+          {
+            "node": "conversion en html",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mail autre 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "conversion en html": {
+      "main": [
+        [
+          {
+            "node": "HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "création statut": {
+      "main": [
+        [
+          {
+            "node": "résumé valide ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory2": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI résume texte",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral Cloud Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI résume texte",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory3": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI résume Excel",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral Cloud Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI résume Excel",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI résume Excel": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI résumé final": {
+      "main": [
+        [
+          {
+            "node": "création statut",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from XLS": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from XLSX": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge2": {
+      "main": [
+        [
+          {
+            "node": "Regroupement items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code avoir XLSX": {
+      "main": [
+        [
+          {
+            "node": "Extract from XLSX",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code avoir XLS": {
+      "main": [
+        [
+          {
+            "node": "Extract from XLS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI résume texte": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Reprise des PJ du mail d'entrée": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Regroupement items": {
+      "main": [
+        [
+          {
+            "node": "AI résume Excel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nettoyage texte mail": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9d67137d-d650-4144-8374-c6a69f30a0f1",
+  "meta": {
+    "instanceId": "790517cc9de6016999eef616e344f28d0cfe24a34aad918ccaed82d30119b079"
+  },
+  "id": "6Pnnb9BDAwPQ4NbB",
+  "tags": []
+}
