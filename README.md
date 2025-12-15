@@ -22,14 +22,14 @@ Features
 
 Workflow Overview
 
- 1- Trigger: Microsoft Outlook email received.
- 2- Clean Email: Remove HTML and unnecessary parts of the body.
- 3- Detect Quote Request: AI determines if the email is relevant.
- 4- Extract Attachments: PDFs and Excel files are extracted and processed.
- 5- Summarize Content: AI summarizes technical content related to cabinets.
- 6- Build JSON: Structured data is created for quote preparation.
- 7- Validation: Ensures extracted data is valid and not empty.
- 8- Generate HTML: Creates a readable report for review.
+ - Trigger: Microsoft Outlook email received.
+ - Clean Email: Remove HTML and unnecessary parts of the body.
+ - Detect Quote Request: AI determines if the email is relevant.
+ - Extract Attachments: PDFs and Excel files are extracted and processed.
+ - Summarize Content: AI summarizes technical content related to cabinets.
+ - Build JSON: Structured data is created for quote preparation.
+ - Validation: Ensures extracted data is valid and not empty.
+ - Generate HTML: Creates a readable report for review.
 
 Requirements
 
